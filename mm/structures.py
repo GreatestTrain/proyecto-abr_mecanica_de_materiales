@@ -27,10 +27,10 @@ class Beam(Structure):
         return self._convention
     @convention.setter
     def convention(self, value):
-        if value in (1,2):
+        if value in (1,2,3,4):
             self._convention = value
         else:
-            raise TypeError("Avaible conventions (1 or 2)")
+            raise Exception("Convenciones disponibles 1, 2, 3, 4")
 
     @property
     def loads(self) -> list:
@@ -96,9 +96,9 @@ class Beam(Structure):
                 to_return.append((to_add.simplify(), lm))
             ans = to_add.simplify()
         # to_return.append((sympify(0), (self.current<=_x) & (_x<=self.current)))
-        if self.convention == 1:
+        if self.convention in (1,4):
             to_return = [(-element[0], element[1]) for element in to_return]
-        elif self.convention == 2:
+        elif self.convention == (2,3):
             to_return = to_return
         if type == "Piecewise":
             return Piecewise(*to_return)
@@ -129,9 +129,9 @@ class Beam(Structure):
             
             ans = to_add.simplify()
         # to_return.append((sympify(0), (self.current<=_x) & (_x<=self.current)))
-        if self.convention == 1:
+        if self.convention in (1,3):
             to_return = [(-element[0], element[1]) for element in to_return]
-        elif self.convention == 2:
+        elif self.convention in (2,4):
             to_return = to_return
         if type == "Piecewise":
             return Piecewise(*to_return)
@@ -172,16 +172,27 @@ class Beam(Structure):
         return min(to_return)
     @property
     def sigma_max(self):
-        return (self.bm_max * self.section.max_c) / self.section.I
+        if self.convention in (1,3):
+            return (self.bm_max * self.section.max_c) / self.section.I
+        elif self.convention in (2,4):
+            return - (self.bm_min * self.section.max_c) / self.section.I
     @property
     def sigma_min(self):
-        return (self.bm_min * self.section.max_c) / self.section.I
+        if self.convention in (1,3):
+            return (self.bm_min * self.section.max_c) / self.section.I
+        elif self.convention in (2,4):
+            return - (self.bm_max * self.section.max_c) / self.section.I
 
     def sigma_report(self) -> str:
         s1 = str(round(self.sigma_max,3))
-        s2 = str(round(solve(Eq(self.bmd, self.bm_max))[0],3))
+        if self.convention in (1,3):
+            s2 = str(round(solve(Eq(self.bmd, self.bm_max))[0],3))
+            s4 = str(round(solve(Eq(self.bmd, self.bm_min))[0],3))
+        elif self.convention in (2,4):
+            s4 = str(round(solve(Eq(self.bmd, self.bm_max))[0],3))
+            s2 = str(round(solve(Eq(self.bmd, self.bm_min))[0],3))
         s3 = str(round(self.sigma_min,3))
-        s4 = str(round(solve(Eq(self.bmd, self.bm_min))[0],3))
+        
         return Latex(r"$\sigma_{\text{max}} = " + s1 + " \quad\longrightarrow x  = " + s2 + "$\n\n" + r"$\sigma_{\text{min}} = " +  s3 + " \quad\longrightarrow x  = " + s4 + "$")
 
     def __str__(self):
